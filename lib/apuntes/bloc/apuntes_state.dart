@@ -4,6 +4,10 @@ abstract class ApuntesState extends Equatable {
   const ApuntesState();
 }
 
+abstract class ApuntesAddState extends Equatable {
+  const ApuntesAddState();
+}
+
 class ApuntesInitial extends ApuntesState {
   @override
   List<Object> get props => [];

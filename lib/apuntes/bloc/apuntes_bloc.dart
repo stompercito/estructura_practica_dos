@@ -3,8 +3,12 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:practica_dos/models/apunte.dart';
+import 'package:path/path.dart' as Path;
 
 part 'apuntes_event.dart';
 part 'apuntes_state.dart';
@@ -43,6 +47,17 @@ class ApuntesBloc extends Bloc<ApuntesEvent, ApuntesState> {
         yield CloudStoreError(
           errorMessage: "Ha ocurrido un error. Intente guardar mas tarde.",
         );
+    } else if (event is UploadFile) {
+        await _uploadFile(
+        event.contx,
+        event.materia,
+        event.descripcion,
+        event.choosenImage,
+      );
+        await _getData();
+        yield CloudStoreSaved();
+        
+      
     } else if (event is RemoveDataEvent) {
       try {
         await _documentsList[event.index].reference.delete();
@@ -95,4 +110,30 @@ class ApuntesBloc extends Bloc<ApuntesEvent, ApuntesState> {
       return false;
     }
   }
+
+  Future _uploadFile(
+    dynamic contx,
+    String materia,
+    String descripcion,
+    dynamic choosenImage,
+    ) async {
+    String url;
+    String filePath = choosenImage.path;
+    StorageReference reference = FirebaseStorage.instance
+        .ref()
+        .child("apuntes/${Path.basename(filePath)}");
+    StorageUploadTask uploadTask = reference.putFile(choosenImage);
+    StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
+    taskSnapshot.ref.getDownloadURL().then((imageUrl) {
+      print("Link>>>>> $imageUrl");
+    });
+
+    reference.getDownloadURL().then((fileURL) async {
+      print("$fileURL");
+        url = fileURL;      
+        await _saveApunte(materia, descripcion, url);       
+    });
+  }
+
+  
 }
